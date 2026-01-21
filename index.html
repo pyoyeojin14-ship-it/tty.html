@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>러시안 룰렛</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; padding: 24px; }
+    .wrap { max-width: 520px; margin: 0 auto; }
+    .card { border: 1px solid #ddd; border-radius: 16px; padding: 18px; }
+    h1 { margin: 0 0 8px; font-size: 22px; }
+    .muted { color: #666; margin: 0 0 14px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    button {
+      padding: 12px 14px; border: 1px solid #ddd; border-radius: 12px;
+      background: white; cursor: pointer; font-weight: 700;
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status { margin-top: 14px; font-size: 16px; line-height: 1.5; }
+    .pill {
+      display:inline-block; padding: 6px 10px; border: 1px solid #ddd;
+      border-radius: 999px; font-size: 13px; margin-right: 8px;
+    }
+    .big { font-size: 18px; font-weight: 800; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>🔫 러시안 룰렛</h1>
+      <p class="muted">탄창 6칸 중 1칸만 총알. 버튼을 누를 때마다 다음 칸으로 진행!</p>
+
+      <div>
+        <span class="pill" id="infoChamber">탄창: 6</span>
+        <span class="pill" id="infoIndex">현재 칸: -</span>
+        <span class="pill" id="infoAlive">생존 횟수: 0</span>
+      </div>
+
+      <div class="row">
+        <button id="btnStart">게임 시작</button>
+        <button id="btnFire" disabled>방아쇠 당기기</button>
+        <button id="btnReset">리셋</button>
+      </div>
+
+      <div class="status" id="status">
+        시작을 누르면 총알 위치가 랜덤으로 정해져.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ====== 게임 상태(중요) ======
+    const CHAMBER_SIZE = 6;
+    let chamber = [];     // [0,0,0,1,0,0] 이런 식
+    let index = 0;        // 현재 칸
+    let aliveCount = 0;   // 생존 횟수
+    let started = false;  // 시작 여부
+    let ended = false;    // 끝났는지
+
+    const $status = document.getElementById("status");
+    const $infoIndex = document.getElementById("infoIndex");
+    const $infoAlive = document.getElementById("infoAlive");
+    const $btnStart = document.getElementById("btnStart");
+    const $btnFire = document.getElementById("btnFire");
+    const $btnReset = document.getElementById("btnReset");
+
+    function render() {
+      $infoIndex.textContent = `현재 칸: ${started ? (index + 1) : "-"}`;
+      $infoAlive.textContent = `생존 횟수: ${aliveCount}`;
+    }
+
+    function setStatus(msg) {
+      $status.innerHTML = msg;
+    }
+
+    // 게임 시작: 총알 위치는 "여기서 딱 1번만" 랜덤으로 정해야 룰렛이 됨
+    function startGame() {
+      chamber = new Array(CHAMBER_SIZE).fill(0);
+      const bulletPos = Math.floor(Math.random() * CHAMBER_SIZE);
+      chamber[bulletPos] = 1;
+
+      index = 0;
+      aliveCount = 0;
+      started = true;
+      ended = false;
+
+      $btnFire.disabled = false;
+
+      setStatus("게임 시작! 😬 방아쇠를 당겨봐.");
+      render();
+
+      // 디버그용(원하면 삭제): 총알 위치 확인
+      // console.log("bulletPos:", bulletPos, chamber);
+    }
+
+    function fire() {
+      if (!started || ended) return;
+
+      // 현재 칸 확인
+      const current = chamber[index];
+
+      if (current === 1) {
+        ended = true;
+        $btnFire.disabled = true;
+        setStatus(`💥 탕! <span class="big">사망...</span><br>리셋하거나 다시 시작해.`);
+        render();
+        return;
+      }
+
+      // 빈칸이면 생존 + 다음 칸으로
+      aliveCount++;
+      setStatus(`😮 휴… 살았다! (생존 ${aliveCount}회)<br>다음 칸으로 넘어간다…`);
+      index++;
+
+      // 6칸 다 넘기면 생존 승리
+      if (index >= CHAMBER_SIZE) {
+        ended = true;
+        $btnFire.disabled = true;
+        setStatus(`🎉 <span class="big">전부 넘겼다! 완전 생존!</span><br>다시 하려면 시작/리셋.`);
+      }
+
+      render();
+    }
+
+    function resetGame() {
+      chamber = [];
+      index = 0;
+      aliveCount = 0;
+      started = false;
+      ended = false;
+
+      $btnFire.disabled = true;
+
+      setStatus("리셋 완료. 시작을 누르면 총알 위치가 랜덤으로 정해져.");
+      render();
+    }
+
+    // ====== 이벤트 연결 ======
+    $btnStart.addEventListener("click", startGame);
+    $btnFire.addEventListener("click", fire);
+    $btnReset.addEventListener("click", resetGame);
+
+    // 초기 렌더
+    render();
+  </script>
+</body>
+</html>
